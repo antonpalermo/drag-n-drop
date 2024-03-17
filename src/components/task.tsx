@@ -2,7 +2,7 @@ import classes from "./task.module.css";
 
 export type TaskProps = {
   task: {
-    id: number;
+    id: string;
     name: string;
   };
 };

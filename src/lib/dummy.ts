@@ -1,15 +1,15 @@
 const dummy = {
   tasks: [
     {
-      id: 1,
+      id: "AB1",
       name: "Learn how to dance",
     },
     {
-      id: 2,
+      id: "AB2",
       name: "Cook diner",
     },
     {
-      id: 3,
+      id: "AB3",
       name: "Go for a morning jog",
     },
   ],
