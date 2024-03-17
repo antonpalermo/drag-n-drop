@@ -31,9 +31,28 @@ const StrictModeDroppable = ({ children, ...props }: DroppableProps) => {
 };
 
 export default function App() {
-  function onDragEnd(result: DropResult, provided: ResponderProvided) {
-    // TODO:
-    console.log(result, provided);
+  const [tasks, setTasks] = useState(fakes.tasks);
+
+  function onDragEnd(result: DropResult, _: ResponderProvided) {
+    const { source, destination } = result;
+
+    if (!destination) return;
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    )
+      return;
+
+    console.log("old tasks: ", tasks);
+
+    const newTasks = Array.from(tasks);
+    const [task] = newTasks.splice(source.index, 1);
+
+    newTasks.splice(destination.index, 0, task);
+    setTasks(newTasks);
+
+    console.log("new tasks: ", tasks);
   }
 
   return (
@@ -43,7 +62,7 @@ export default function App() {
         <StrictModeDroppable droppableId="tasks">
           {(provided) => (
             <div ref={provided.innerRef} {...provided.droppableProps}>
-              {fakes.tasks.map((task, index) => (
+              {tasks.map((task, index) => (
                 <Draggable key={task.id} draggableId={task.id} index={index}>
                   {(provided) => (
                     <div
