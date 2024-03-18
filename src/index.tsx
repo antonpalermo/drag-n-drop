@@ -6,12 +6,12 @@ import {
   DragDropContext,
   ResponderProvided,
 } from "react-beautiful-dnd";
+import { useEffect, useState } from "react";
 
 import fakes from "./lib/dummy";
 import styles from "./index.module.css";
 
 import Task from "./components/task";
-import { useEffect, useState } from "react";
 
 const StrictModeDroppable = ({ children, ...props }: DroppableProps) => {
   const [enabled, setEnabled] = useState(false);
