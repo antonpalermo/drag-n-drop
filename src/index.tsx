@@ -74,15 +74,11 @@ export default function App() {
     )
       return;
 
-    console.log("old tasks: ", characters);
-
     const newTasks = Array.from(characters);
     const [task] = newTasks.splice(source.index, 1);
 
     newTasks.splice(destination.index, 0, task);
     setCharacters(newTasks);
-
-    console.log("new tasks: ", characters);
   }
 
   return (
