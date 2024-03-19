@@ -9,6 +9,8 @@ import {
 import { useEffect, useState } from "react";
 import { uniqueNamesGenerator, Config, starWars } from "unique-names-generator";
 
+import { LexoRank } from "lexorank";
+
 import fakes from "./lib/dummy";
 import styles from "./index.module.css";
 
@@ -32,15 +34,33 @@ const StrictModeDroppable = ({ children, ...props }: DroppableProps) => {
 };
 
 export default function App() {
-  const [tasks, setTasks] = useState(fakes.characters);
+  const [characters, setCharacters] = useState(fakes.characters);
 
   const config: Config = {
     dictionaries: [starWars],
   };
 
+  function generateRank() {
+    // create and assign initial rank
+    let generateNewRank = LexoRank.min().format();
+
+    if (characters.length) {
+      const currentRank = LexoRank.parse(
+        characters[characters.length - 1].order
+      );
+      generateNewRank = currentRank.genNext().format();
+    }
+
+    return generateNewRank;
+  }
+
   function onTaskCreate() {
-    const item = { id: tasks.length, name: uniqueNamesGenerator(config) };
-    setTasks((prevTasks) => [...prevTasks, item]);
+    const item = {
+      id: characters.length,
+      name: uniqueNamesGenerator(config),
+      order: generateRank(),
+    };
+    setCharacters((prevTasks) => [...prevTasks, item]);
   }
 
   function onDragEnd(result: DropResult, _: ResponderProvided) {
@@ -54,15 +74,15 @@ export default function App() {
     )
       return;
 
-    console.log("old tasks: ", tasks);
+    console.log("old tasks: ", characters);
 
-    const newTasks = Array.from(tasks);
+    const newTasks = Array.from(characters);
     const [task] = newTasks.splice(source.index, 1);
 
     newTasks.splice(destination.index, 0, task);
-    setTasks(newTasks);
+    setCharacters(newTasks);
 
-    console.log("new tasks: ", tasks);
+    console.log("new tasks: ", characters);
   }
 
   return (
@@ -75,7 +95,7 @@ export default function App() {
         <StrictModeDroppable droppableId="tasks">
           {(provided) => (
             <div ref={provided.innerRef} {...provided.droppableProps}>
-              {tasks.map((character, index) => (
+              {characters.map((character, index) => (
                 <Draggable
                   index={index}
                   key={character.id}
