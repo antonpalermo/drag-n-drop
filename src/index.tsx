@@ -7,11 +7,12 @@ import {
   ResponderProvided,
 } from "react-beautiful-dnd";
 import { useEffect, useState } from "react";
+import { uniqueNamesGenerator, Config, starWars } from "unique-names-generator";
 
 import fakes from "./lib/dummy";
 import styles from "./index.module.css";
 
-import Task from "./components/task";
+import Character from "./components/character";
 
 const StrictModeDroppable = ({ children, ...props }: DroppableProps) => {
   const [enabled, setEnabled] = useState(false);
@@ -31,7 +32,16 @@ const StrictModeDroppable = ({ children, ...props }: DroppableProps) => {
 };
 
 export default function App() {
-  const [tasks, setTasks] = useState(fakes.tasks);
+  const [tasks, setTasks] = useState(fakes.characters);
+
+  const config: Config = {
+    dictionaries: [starWars],
+  };
+
+  function onTaskCreate() {
+    const item = { id: tasks.length, name: uniqueNamesGenerator(config) };
+    setTasks((prevTasks) => [...prevTasks, item]);
+  }
 
   function onDragEnd(result: DropResult, _: ResponderProvided) {
     const { source, destination } = result;
@@ -58,19 +68,26 @@ export default function App() {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className={styles.container}>
-        <h1>Tasks</h1>
+        <div className={styles.rankHeaderContainer}>
+          <h1>Ranking</h1>
+          <button onClick={onTaskCreate}>New Character</button>
+        </div>
         <StrictModeDroppable droppableId="tasks">
           {(provided) => (
             <div ref={provided.innerRef} {...provided.droppableProps}>
-              {tasks.map((task, index) => (
-                <Draggable key={task.id} draggableId={task.id} index={index}>
+              {tasks.map((character, index) => (
+                <Draggable
+                  index={index}
+                  key={character.id}
+                  draggableId={character.name}
+                >
                   {(provided) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
                     >
-                      <Task task={task} />
+                      <Character character={character} />
                     </div>
                   )}
                 </Draggable>

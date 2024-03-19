@@ -1,18 +1,15 @@
-const dummy = {
-  tasks: [
-    {
-      id: "AB1",
-      name: "Learn how to dance",
-    },
-    {
-      id: "AB2",
-      name: "Cook diner",
-    },
-    {
-      id: "AB3",
-      name: "Go for a morning jog",
-    },
-  ],
+type Characters = {
+  id: number;
+  name: string;
+  [key: string]: any;
+};
+
+type Data = {
+  characters: Characters[];
+};
+
+const dummy: Data = {
+  characters: [],
 };
 
 export default dummy;
