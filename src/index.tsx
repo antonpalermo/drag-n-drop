@@ -74,10 +74,19 @@ export default function App() {
     )
       return;
 
+    const lower = LexoRank.parse(characters[source.index].order);
+
+    const updatedRank = LexoRank.parse(
+      characters[destination.index].order
+    ).between(lower);
+
     const newTasks = Array.from(characters);
     const [task] = newTasks.splice(source.index, 1);
 
-    newTasks.splice(destination.index, 0, task);
+    newTasks.splice(destination.index, 0, {
+      ...task,
+      order: updatedRank.format(),
+    });
     setCharacters(newTasks);
   }
 
