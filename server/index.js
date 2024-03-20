@@ -1,10 +1,10 @@
-import express, { Express, Request, Response } from "express";
+import express from "express";
 
 async function main() {
-  const app: Express = express();
-  const port = parseInt(process.env.PORT!) || 4545;
+  const app = express();
+  const port = process.env.PORT || 4545;
 
-  app.get("/", (_: Request, res: Response) => {
+  app.get("/", (_, res) => {
     return res.status(200).json({ message: "Server OK!" });
   });
 
