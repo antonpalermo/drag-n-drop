@@ -46,7 +46,7 @@ export default function App() {
 
     if (characters.length) {
       const currentRank = LexoRank.parse(
-        characters[characters.length - 1].order
+        characters[characters.length - 1].rankorder
       );
       generateNewRank = currentRank.genNext().format();
     }
@@ -54,13 +54,24 @@ export default function App() {
     return generateNewRank;
   }
 
-  function onTaskCreate() {
-    const item = {
-      id: characters.length,
-      name: uniqueNamesGenerator(config),
-      order: generateRank(),
-    };
-    setCharacters((prevTasks) => [...prevTasks, item]);
+  async function createNewCharacter() {
+    const request = await fetch("http://localhost:4545/characters/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: uniqueNamesGenerator(config),
+        rankorder: generateRank(),
+      }),
+    });
+
+    if (!request.ok) {
+      return;
+    }
+
+    const character = await request.json();
+    setCharacters((prevCharacters) => [...prevCharacters, character]);
   }
 
   function onDragEnd(result: DropResult, _: ResponderProvided) {
@@ -74,10 +85,10 @@ export default function App() {
     )
       return;
 
-    const lower = LexoRank.parse(characters[source.index].order);
+    const lower = LexoRank.parse(characters[source.index].rankorder);
 
     const updatedRank = LexoRank.parse(
-      characters[destination.index].order
+      characters[destination.index].rankorder
     ).between(lower);
 
     const newTasks = Array.from(characters);
@@ -85,7 +96,7 @@ export default function App() {
 
     newTasks.splice(destination.index, 0, {
       ...task,
-      order: updatedRank.format(),
+      rankorder: updatedRank.format(),
     });
     setCharacters(newTasks);
   }
@@ -95,7 +106,7 @@ export default function App() {
       <div className={styles.container}>
         <div className={styles.rankHeaderContainer}>
           <h1>Ranking</h1>
-          <button onClick={onTaskCreate}>New Character</button>
+          <button onClick={createNewCharacter}>New Character</button>
         </div>
         <StrictModeDroppable droppableId="tasks">
           {(provided) => (
@@ -104,7 +115,7 @@ export default function App() {
                 <Draggable
                   index={index}
                   key={character.id}
-                  draggableId={character.name}
+                  draggableId={character.id}
                 >
                   {(provided) => (
                     <div

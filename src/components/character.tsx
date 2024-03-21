@@ -2,9 +2,9 @@ import styles from "./character.module.css";
 
 export type TaskProps = {
   character: {
-    id: number;
+    id: string;
     name: string;
-    order: string;
+    rankorder: string;
   };
 };
 
@@ -12,7 +12,7 @@ export default function Character({ character }: TaskProps) {
   return (
     <div className={styles.task}>
       <h2>{character.name}</h2>
-      {character.order}
+      {character.rankorder}
     </div>
   );
 }

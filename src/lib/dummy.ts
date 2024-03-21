@@ -1,7 +1,7 @@
 type Characters = {
-  id: number;
+  id: string;
   name: string;
-  order: string;
+  rankorder: string;
   [key: string]: any;
 };
 
