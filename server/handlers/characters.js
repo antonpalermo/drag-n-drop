@@ -7,7 +7,7 @@ async function create(characters) {
       values: [characters.name, characters.rankorder],
     };
     const character = await db.query(query);
-    return character.rows;
+    return character.rows[0];
   } catch (error) {
     console.log(error);
     await db.end();
