@@ -9,12 +9,9 @@ import {
 import { useEffect, useState } from "react";
 import { uniqueNamesGenerator, Config, starWars } from "unique-names-generator";
 
-import { LexoRank } from "lexorank";
-
-import fakes from "./lib/dummy";
 import styles from "./index.module.css";
-
 import Character from "./components/character";
+import Lex from "./lib/lexorank";
 
 const StrictModeDroppable = ({ children, ...props }: DroppableProps) => {
   const [enabled, setEnabled] = useState(false);
@@ -33,28 +30,35 @@ const StrictModeDroppable = ({ children, ...props }: DroppableProps) => {
   return <Droppable {...props}>{children}</Droppable>;
 };
 
+type CharacterData = {
+  id: string;
+  name: string;
+  rankorder: string;
+  [key: string]: any;
+};
+
 export default function App() {
-  const [characters, setCharacters] = useState(fakes.characters);
+  const endpoint =
+    process.env.NODE_ENV === "production"
+      ? process.env.BACKEND_URL
+      : "http://localhost:4545";
+
+  const [characters, setCharacters] = useState<CharacterData[]>([]);
 
   const config: Config = {
     dictionaries: [starWars],
   };
 
-  function generateRank() {
-    // create and assign initial rank
-    let generateNewRank = LexoRank.min().format();
-
-    if (characters.length) {
-      const currentRank = LexoRank.parse(
-        characters[characters.length - 1].rankorder
-      );
-      generateNewRank = currentRank.genNext().format();
-    }
-
-    return generateNewRank;
-  }
+  useEffect(() => {
+    fetch(`${endpoint}/characters`)
+      .then((response) => response.json())
+      .then((data) => setCharacters(data.characters))
+      .catch((error) => console.log("error: ", error));
+  }, []);
 
   async function createNewCharacter() {
+    const lastCharacter = characters[characters.length - 1];
+
     const request = await fetch("http://localhost:4545/characters/create", {
       method: "POST",
       headers: {
@@ -62,7 +66,7 @@ export default function App() {
       },
       body: JSON.stringify({
         name: uniqueNamesGenerator(config),
-        rankorder: generateRank(),
+        rankorder: Lex.assign(lastCharacter && lastCharacter.rankorder),
       }),
     });
 
@@ -74,30 +78,34 @@ export default function App() {
     setCharacters((prevCharacters) => [...prevCharacters, character]);
   }
 
-  function onDragEnd(result: DropResult, _: ResponderProvided) {
-    const { source, destination } = result;
-
-    if (!destination) return;
+  async function onDragEnd(result: DropResult, _: ResponderProvided) {
+    if (!result.destination) return;
 
     if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
+      result.destination.droppableId === result.source.droppableId &&
+      result.destination.index === result.source.index
     )
       return;
 
-    const lower = LexoRank.parse(characters[source.index].rankorder);
+    // get the source rank order
+    const source = characters[result.source.index].rankorder;
+    // get the destination rank order
+    const destination = characters[result.destination.index].rankorder;
 
-    const updatedRank = LexoRank.parse(
-      characters[destination.index].rankorder
-    ).between(lower);
+    const updatedPosition = Lex.reposition(source, destination);
 
     const newTasks = Array.from(characters);
-    const [task] = newTasks.splice(source.index, 1);
+    const [task] = newTasks.splice(result.source.index, 1);
 
-    newTasks.splice(destination.index, 0, {
-      ...task,
-      rankorder: updatedRank.format(),
+    await fetch(`${endpoint}/characters/reorder`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: result.draggableId, updatedPosition }),
     });
+
+    newTasks.splice(result.destination.index, 0, task);
     setCharacters(newTasks);
   }
 
