@@ -14,4 +14,9 @@ router.post("/create", async (req, res) => {
   return res.status(200).json(character);
 });
 
+router.patch("/reorder", async (req, res) => {
+  const updatedCharacter = await charactersHandler.changeOrder(req.body);
+  return res.status(200).json(updatedCharacter);
+});
+
 export default router;
