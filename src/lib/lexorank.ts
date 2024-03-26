@@ -18,7 +18,9 @@ export default class Lex extends LexoRank {
   }
 
   static reposition(source: string, destination: string) {
-    const sourceRank = LexoRank.parse(source);
-    return LexoRank.parse(destination).between(sourceRank).format();
+    return LexoRank.parse(source)
+      .between(LexoRank.parse(destination))
+      .genNext()
+      .format();
   }
 }

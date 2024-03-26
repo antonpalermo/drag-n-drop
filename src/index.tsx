@@ -34,6 +34,7 @@ type CharacterData = {
   id: string;
   name: string;
   rankorder: string;
+  originalorder: number;
   [key: string]: any;
 };
 
@@ -88,9 +89,9 @@ export default function App() {
       return;
 
     // get the source rank order
-    const source = characters[result.source.index].rankorder;
+    const source = characters[result.source.index + 1].rankorder;
     // get the destination rank order
-    const destination = characters[result.destination.index].rankorder;
+    const destination = characters[result.destination.index + 1].rankorder;
 
     const updatedPosition = Lex.reposition(source, destination);
 
