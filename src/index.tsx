@@ -3,10 +3,16 @@ import {
   DragStartEvent,
   DragEndEvent,
   closestCorners,
+  useSensor,
+  useSensors,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
 } from "@dnd-kit/core";
 
 import {
   SortableContext,
+  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
@@ -31,11 +37,17 @@ export default function App() {
       ? process.env.BACKEND_URL
       : "http://localhost:4545";
 
-  const [characters, setCharacters] = useState<CharacterData[]>([]);
-
   const config: Config = {
     dictionaries: [starWars],
   };
+
+  const [characters, setCharacters] = useState<CharacterData[]>([]);
+
+  const sensors = useSensors(
+    useSensor(TouchSensor),
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   useEffect(() => {
     fetch(`${endpoint}/characters`)
@@ -81,9 +93,10 @@ export default function App() {
         <button onClick={createNewCharacter}>New Character</button>
       </div>
       <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        collisionDetection={closestCorners}
       >
         <SortableContext
           items={characters}
