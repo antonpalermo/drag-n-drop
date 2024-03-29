@@ -19,17 +19,11 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { uniqueNamesGenerator, Config, starWars } from "unique-names-generator";
 
-import Lex from "./lib/lexorank";
+import listHelpers from "./lib/list.helpers";
 import styles from "./index.module.css";
 import Character from "./components/character";
 
-type CharacterData = {
-  id: string;
-  name: string;
-  rankorder: string;
-  originalorder: number;
-  [key: string]: any;
-};
+import { Character as CharacterData } from "./lib/list.type";
 
 export default function App() {
   const endpoint =
@@ -41,6 +35,7 @@ export default function App() {
     dictionaries: [starWars],
   };
 
+  const [activeCharacter, setActiveCharacter] = useState("");
   const [characters, setCharacters] = useState<CharacterData[]>([]);
 
   const sensors = useSensors(
@@ -66,7 +61,7 @@ export default function App() {
       },
       body: JSON.stringify({
         name: uniqueNamesGenerator(config),
-        rankorder: Lex.assign(lastCharacter && lastCharacter.rankorder),
+        // rankorder: Lex.assign(lastCharacter && lastCharacter.rankorder),
       }),
     });
 
@@ -78,12 +73,39 @@ export default function App() {
     setCharacters((prevCharacters) => [...prevCharacters, character]);
   }
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    console.log(event);
-  }, []);
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const { active } = event;
+      if (event.active) setActiveCharacter(`${active.id}`);
+    },
+    [setActiveCharacter]
+  );
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
-    console.log(event);
+    const { active, over } = event;
+
+    if (active.id === over?.id) return;
+
+    setCharacters((prevState) => {
+      const sortablePayload = listHelpers.createSortablePayloadByIndex(
+        prevState,
+        event
+      );
+      const newRankOrder = listHelpers.getRankInBetween(sortablePayload);
+      const newCharacterList = [...prevState];
+      const currentCharacterIndex = prevState.findIndex(
+        (x) => x.id === sortablePayload.entity.id
+      );
+
+      newCharacterList[currentCharacterIndex] = {
+        ...newCharacterList[currentCharacterIndex],
+        rankorder: newRankOrder.format(),
+      };
+
+      return newCharacterList.sort(listHelpers.sortListAsc);
+    });
+
+    setActiveCharacter("");
   }, []);
 
   return (

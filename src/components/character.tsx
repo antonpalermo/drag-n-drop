@@ -3,14 +3,10 @@ import styles from "./character.module.css";
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Character as CharacterData } from "../lib/list.type";
 
 export type TaskProps = {
-  character: {
-    id: string;
-    name: string;
-    rankorder: string;
-    originalorder: number;
-  };
+  character: CharacterData;
 };
 
 export default function Character({ character }: TaskProps) {
