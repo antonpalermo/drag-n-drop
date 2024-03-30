@@ -92,6 +92,27 @@ export default function App() {
     if (active.id === over?.id) {
       return;
     }
+
+    setCharacters((prevState) => {
+      const sortableCharaterList = listHelpers.createSortablePayloadByIndex(
+        prevState,
+        event
+      );
+
+      const assignRank = listHelpers.getRankInBetween(sortableCharaterList);
+
+      const newList = [...prevState];
+      const currentCharacterIndex = newList.findIndex(
+        (x) => x.id === sortableCharaterList.current.id
+      );
+
+      newList[currentCharacterIndex] = {
+        ...newList[currentCharacterIndex],
+        rankorder: assignRank.toString(),
+      };
+
+      return newList.sort(listHelpers.sortListAsc);
+    });
   }, []);
 
   return (

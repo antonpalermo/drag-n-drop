@@ -12,7 +12,7 @@ function sortListAsc(a: Character, b: Character): number {
 }
 
 function getRankInBetween(payload: SortablePayload): LexoRank {
-  const { upper, entity, lower } = payload;
+  const { upper, current, lower } = payload;
 
   let lex: LexoRank;
 
@@ -25,29 +25,42 @@ function getRankInBetween(payload: SortablePayload): LexoRank {
       LexoRank.parse(upper.rankorder)
     );
   } else {
-    lex = LexoRank.parse(entity.rankorder).genNext();
+    lex = LexoRank.parse(current.rankorder).genNext();
   }
 
   return lex;
 }
 
-function createSortablePayloadByIndex(items: any, event: DragEndEvent) {
+function createSortablePayloadByIndex<TEntity extends Character>(
+  items: TEntity[],
+  event: DragEndEvent
+): SortablePayload {
   const { active, over } = event;
+
   const oldIndex = items.findIndex((x: any) => x.id === active.id);
   const newIndex = items.findIndex((x: any) => x.id === over?.id);
-  let input;
-  const entity = items[oldIndex];
+
+  let input: SortablePayload;
+
   if (newIndex === 0) {
-    const nextEntity = items[newIndex];
-    input = { prevEntity: undefined, entity: entity, nextEntity: nextEntity };
+    input = {
+      upper: undefined,
+      current: items[oldIndex],
+      lower: items[newIndex],
+    };
   } else if (newIndex === items.length - 1) {
-    const prevEntity = items[newIndex];
-    input = { prevEntity: prevEntity, entity: entity, nextEntity: undefined };
+    input = {
+      upper: items[newIndex],
+      current: items[oldIndex],
+      lower: undefined,
+    };
   } else {
-    const prevEntity = items[newIndex];
     const offset = oldIndex > newIndex ? -1 : 1;
-    const nextEntity = items[newIndex + offset];
-    input = { prevEntity: prevEntity, entity: entity, nextEntity: nextEntity };
+    input = {
+      upper: items[newIndex],
+      current: items[oldIndex],
+      lower: items[newIndex + offset],
+    };
   }
 
   return input;

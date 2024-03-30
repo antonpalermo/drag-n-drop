@@ -6,7 +6,7 @@ export type Character = {
 };
 
 export type SortablePayload = {
-  upper?: any;
-  entity: any;
-  lower?: any;
+  upper?: Character | undefined;
+  current: Character;
+  lower?: Character | undefined;
 };
