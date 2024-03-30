@@ -1,6 +1,5 @@
 import {
   DndContext,
-  DragStartEvent,
   DragEndEvent,
   closestCorners,
   useSensor,
@@ -16,26 +15,26 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
+import { LexoRank } from "lexorank";
 import { useCallback, useEffect, useState } from "react";
 import { uniqueNamesGenerator, Config, starWars } from "unique-names-generator";
 
-import listHelpers from "./lib/list.helpers";
 import styles from "./index.module.css";
+import listHelpers from "./lib/list.helpers";
 import Character from "./components/character";
 
 import { Character as CharacterData } from "./lib/list.type";
 
+const mode = import.meta.env.MODE;
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
 export default function App() {
-  const endpoint =
-    process.env.NODE_ENV === "production"
-      ? process.env.BACKEND_URL
-      : "http://localhost:4545";
+  const endpoint = mode === "production" ? backendUrl : "http://localhost:4545";
 
   const config: Config = {
     dictionaries: [starWars],
   };
 
-  const [activeCharacter, setActiveCharacter] = useState("");
   const [characters, setCharacters] = useState<CharacterData[]>([]);
 
   const sensors = useSensors(
@@ -51,17 +50,26 @@ export default function App() {
       .catch((error) => console.log("error: ", error));
   }, []);
 
-  async function createNewCharacter() {
-    const lastCharacter = characters[characters.length - 1];
+  async function createCharacter() {
+    // assign initial lexorank value.
+    let currentRank = LexoRank.min().format();
 
-    const request = await fetch("http://localhost:4545/characters/create", {
+    // check if list exist then generate the next lexorank value.
+    if (characters.length) {
+      currentRank = LexoRank.parse(characters[characters.length - 1].rankorder)
+        .genNext()
+        .format();
+    }
+
+    // send the request to create new character with corresponding route.
+    const request = await fetch(`${endpoint}/characters/create`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         name: uniqueNamesGenerator(config),
-        // rankorder: Lex.assign(lastCharacter && lastCharacter.rankorder),
+        rankorder: currentRank,
       }),
     });
 
@@ -70,55 +78,32 @@ export default function App() {
     }
 
     const character = await request.json();
-    setCharacters((prevCharacters) => [...prevCharacters, character]);
+    // update the local state
+    setCharacters((prevState) => {
+      const newCharacterSet = [...prevState, character];
+      // return the sorted list of new array.
+      return newCharacterSet.sort(listHelpers.sortListAsc);
+    });
   }
-
-  const handleDragStart = useCallback(
-    (event: DragStartEvent) => {
-      const { active } = event;
-      if (event.active) setActiveCharacter(`${active.id}`);
-    },
-    [setActiveCharacter]
-  );
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (active.id === over?.id) return;
-
-    setCharacters((prevState) => {
-      const sortablePayload = listHelpers.createSortablePayloadByIndex(
-        prevState,
-        event
-      );
-      const newRankOrder = listHelpers.getRankInBetween(sortablePayload);
-      const newCharacterList = [...prevState];
-      const currentCharacterIndex = prevState.findIndex(
-        (x) => x.id === sortablePayload.entity.id
-      );
-
-      newCharacterList[currentCharacterIndex] = {
-        ...newCharacterList[currentCharacterIndex],
-        rankorder: newRankOrder.format(),
-      };
-
-      return newCharacterList.sort(listHelpers.sortListAsc);
-    });
-
-    setActiveCharacter("");
+    if (active.id === over?.id) {
+      return;
+    }
   }, []);
 
   return (
     <div className={styles.container}>
       <div className={styles.rankHeaderContainer}>
         <h1>Ranking</h1>
-        <button onClick={createNewCharacter}>New Character</button>
+        <button onClick={createCharacter}>New Character</button>
       </div>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        collisionDetection={closestCorners}
       >
         <SortableContext
           items={characters}

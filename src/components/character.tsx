@@ -30,6 +30,7 @@ export default function Character({ character }: TaskProps) {
       {...listeners}
     >
       <h2>{character.name}</h2>
+      <p>{character.id}</p>
       {character.rankorder} - {character.originalorder}
     </div>
   );
