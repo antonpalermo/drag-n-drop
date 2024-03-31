@@ -10,3 +10,8 @@ export type SortablePayload = {
   current: Character;
   lower?: Character | undefined;
 };
+
+export type CharactersResponse = {
+  count: number;
+  characters: Character[];
+};

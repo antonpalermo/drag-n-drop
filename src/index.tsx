@@ -16,26 +16,35 @@ import {
 } from "@dnd-kit/sortable";
 
 import { LexoRank } from "lexorank";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { uniqueNamesGenerator, Config, starWars } from "unique-names-generator";
 
 import styles from "./index.module.css";
 import listHelpers from "./lib/list.helpers";
 import Character from "./components/character";
 
-import { Character as CharacterData } from "./lib/list.type";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-const mode = import.meta.env.MODE;
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
+import services from "./services/characters";
 
 export default function App() {
-  const endpoint = mode === "production" ? backendUrl : "http://localhost:4545";
+  const client = useQueryClient();
+
+  const { data, isPending, isError } = useQuery({
+    queryKey: ["characters"],
+    queryFn: async () => await services.getAllCharacters(),
+  });
+
+  const createCharacterMutation = useMutation({
+    mutationFn: async () => await createCharacter(),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["characters"] });
+    },
+  });
 
   const config: Config = {
     dictionaries: [starWars],
   };
-
-  const [characters, setCharacters] = useState<CharacterData[]>([]);
 
   const sensors = useSensors(
     useSensor(TouchSensor),
@@ -43,47 +52,25 @@ export default function App() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  useEffect(() => {
-    fetch(`${endpoint}/characters`)
-      .then((response) => response.json())
-      .then((data) => setCharacters(data.characters))
-      .catch((error) => console.log("error: ", error));
-  }, []);
-
   async function createCharacter() {
     // assign initial lexorank value.
     let currentRank = LexoRank.min().format();
 
+    const characters = data?.characters;
+
     // check if list exist then generate the next lexorank value.
-    if (characters.length) {
+    if (characters) {
       currentRank = LexoRank.parse(characters[characters.length - 1].rankorder)
         .genNext()
         .format();
     }
 
-    // send the request to create new character with corresponding route.
-    const request = await fetch(`${endpoint}/characters/create`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: uniqueNamesGenerator(config),
-        rankorder: currentRank,
-      }),
-    });
+    const payload = {
+      name: uniqueNamesGenerator(config),
+      rankorder: currentRank,
+    };
 
-    if (!request.ok) {
-      return;
-    }
-
-    const character = await request.json();
-    // update the local state
-    setCharacters((prevState) => {
-      const newCharacterSet = [...prevState, character];
-      // return the sorted list of new array.
-      return newCharacterSet.sort(listHelpers.sortListAsc);
-    });
+    await services.createNewCharacter(payload);
   }
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -93,48 +80,58 @@ export default function App() {
       return;
     }
 
-    setCharacters((prevState) => {
-      const sortableCharaterList = listHelpers.createSortablePayloadByIndex(
-        prevState,
-        event
-      );
+    // setCharacters((prevState) => {
+    //   const sortableCharaterList = listHelpers.createSortablePayloadByIndex(
+    //     prevState,
+    //     event
+    //   );
 
-      const assignRank = listHelpers.getRankInBetween(sortableCharaterList);
+    //   const assignRank = listHelpers.getRankInBetween(sortableCharaterList);
 
-      const newList = [...prevState];
-      const currentCharacterIndex = newList.findIndex(
-        (x) => x.id === sortableCharaterList.current.id
-      );
+    //   const newList = [...prevState];
+    //   const currentCharacterIndex = newList.findIndex(
+    //     (x) => x.id === sortableCharaterList.current.id
+    //   );
 
-      newList[currentCharacterIndex] = {
-        ...newList[currentCharacterIndex],
-        rankorder: assignRank.toString(),
-      };
+    //   newList[currentCharacterIndex] = {
+    //     ...newList[currentCharacterIndex],
+    //     rankorder: assignRank.toString(),
+    //   };
 
-      return newList.sort(listHelpers.sortListAsc);
-    });
+    //   return newList.sort(listHelpers.sortListAsc);
+    // });
   }, []);
 
   return (
     <div className={styles.container}>
       <div className={styles.rankHeaderContainer}>
         <h1>Ranking</h1>
-        <button onClick={createCharacter}>New Character</button>
+        <button onClick={() => createCharacterMutation.mutate()}>
+          New Character
+        </button>
       </div>
-      <DndContext
-        sensors={sensors}
-        onDragEnd={handleDragEnd}
-        collisionDetection={closestCorners}
-      >
-        <SortableContext
-          items={characters}
-          strategy={verticalListSortingStrategy}
-        >
-          {characters.map((character) => (
-            <Character key={character.id} character={character} />
-          ))}
-        </SortableContext>
-      </DndContext>
+      {!isError ? (
+        isPending ? (
+          <h1>Loading...</h1>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            onDragEnd={handleDragEnd}
+            collisionDetection={closestCorners}
+          >
+            <SortableContext
+              items={data?.characters}
+              strategy={verticalListSortingStrategy}
+            >
+              {data.characters.map((character) => (
+                <Character key={character.id} character={character} />
+              ))}
+            </SortableContext>
+          </DndContext>
+        )
+      ) : (
+        <h1>Oops! Theres an error fetching all available characters</h1>
+      )}
     </div>
   );
 }
