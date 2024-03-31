@@ -34,4 +34,28 @@ async function createNewCharacter({
   return await request.json();
 }
 
-export default { getAllCharacters, createNewCharacter };
+async function updateCharacterPosition(data: {
+  id: string;
+  updatedPosition: string;
+}) {
+  const request = await fetch(`${endpoint}/characters/reorder`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: data.id,
+      updatedPosition: data.updatedPosition,
+    }),
+  });
+
+  if (!request.ok) {
+    throw new Error("Unable to update character position");
+  }
+
+  return await request.json();
+}
+
+export default {
+  getAllCharacters,
+  createNewCharacter,
+  updateCharacterPosition,
+};

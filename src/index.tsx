@@ -42,6 +42,26 @@ export default function App() {
     },
   });
 
+  const updateCharacterPositionMutation = useMutation({
+    mutationFn: async (data: { id: string; updatedPosition: string }) =>
+      await services.updateCharacterPosition(data),
+    onMutate: async (data) => {
+      await client.cancelQueries({ queryKey: ["characters"] });
+
+      const previousState = client.getQueryData(["characters"]);
+
+      console.log("onMutate data", data);
+
+      return { previousState };
+    },
+    onError: (_, __, context) => {
+      client.setQueryData(["characters"], context?.previousState);
+    },
+    onSettled: () => {
+      client.invalidateQueries({ queryKey: ["characters"] });
+    },
+  });
+
   const config: Config = {
     dictionaries: [starWars],
   };
@@ -73,33 +93,30 @@ export default function App() {
     await services.createNewCharacter(payload);
   }
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (active.id === over?.id) {
       return;
     }
 
-    // setCharacters((prevState) => {
-    //   const sortableCharaterList = listHelpers.createSortablePayloadByIndex(
-    //     prevState,
-    //     event
-    //   );
+    if (!data) {
+      return;
+    }
 
-    //   const assignRank = listHelpers.getRankInBetween(sortableCharaterList);
+    const sortableCharacterList = listHelpers.createSortablePayloadByIndex(
+      data?.characters,
+      event
+    );
 
-    //   const newList = [...prevState];
-    //   const currentCharacterIndex = newList.findIndex(
-    //     (x) => x.id === sortableCharaterList.current.id
-    //   );
+    const updatedRankValue = listHelpers.getRankInBetween(
+      sortableCharacterList
+    );
 
-    //   newList[currentCharacterIndex] = {
-    //     ...newList[currentCharacterIndex],
-    //     rankorder: assignRank.toString(),
-    //   };
-
-    //   return newList.sort(listHelpers.sortListAsc);
-    // });
+    await updateCharacterPositionMutation.mutateAsync({
+      id: active.id.toString(),
+      updatedPosition: updatedRankValue.toString(),
+    });
   }, []);
 
   return (
