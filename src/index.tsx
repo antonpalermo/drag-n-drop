@@ -17,22 +17,21 @@ import {
 
 import { LexoRank } from "lexorank";
 import { useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { uniqueNamesGenerator, Config, starWars } from "unique-names-generator";
 
-import styles from "./index.module.css";
 import listHelpers from "./lib/list.helpers";
 import Character from "./components/character";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-import services from "./services/characters";
+import characterService from "./services/characters";
+import styles from "./index.module.css";
 
 export default function App() {
   const client = useQueryClient();
 
   const { data, isPending, isError } = useQuery({
     queryKey: ["characters"],
-    queryFn: async () => await services.getAllCharacters(),
+    queryFn: async () => await characterService.characters(),
   });
 
   const createCharacterMutation = useMutation({
@@ -44,7 +43,7 @@ export default function App() {
 
   const updateCharacterPositionMutation = useMutation({
     mutationFn: async (data: { id: string; updatedPosition: string }) =>
-      await services.updateCharacterPosition(data),
+      await characterService.updateRankOrder(data),
     onMutate: async (data) => {
       await client.cancelQueries({ queryKey: ["characters"] });
 
@@ -79,18 +78,16 @@ export default function App() {
     const characters = data?.characters;
 
     // check if list exist then generate the next lexorank value.
-    if (characters) {
+    if (characters?.length) {
       currentRank = LexoRank.parse(characters[characters.length - 1].rankorder)
         .genNext()
         .format();
     }
 
-    const payload = {
+    await characterService.create({
       name: uniqueNamesGenerator(config),
       rankorder: currentRank,
-    };
-
-    await services.createNewCharacter(payload);
+    });
   }
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
@@ -123,7 +120,7 @@ export default function App() {
     <div className={styles.container}>
       <div className={styles.rankHeaderContainer}>
         <h1>Ranking</h1>
-        <button onClick={() => createCharacterMutation.mutate()}>
+        <button onClick={async () => createCharacterMutation.mutateAsync()}>
           New Character
         </button>
       </div>

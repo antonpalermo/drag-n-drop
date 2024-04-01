@@ -5,7 +5,7 @@ const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 const endpoint = mode === "production" ? backendUrl : "http://localhost:4545";
 
-async function getAllCharacters(): Promise<CharactersResponse> {
+async function characters(): Promise<CharactersResponse> {
   const request = await fetch(`${endpoint}/characters`);
 
   if (!request.ok) {
@@ -15,7 +15,7 @@ async function getAllCharacters(): Promise<CharactersResponse> {
   return await request.json();
 }
 
-async function createNewCharacter({
+async function create({
   name,
   rankorder,
 }: Pick<Character, "name" | "rankorder">) {
@@ -34,10 +34,7 @@ async function createNewCharacter({
   return await request.json();
 }
 
-async function updateCharacterPosition(data: {
-  id: string;
-  updatedPosition: string;
-}) {
+async function updateRankOrder(data: { id: string; updatedPosition: string }) {
   const request = await fetch(`${endpoint}/characters/reorder`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -55,7 +52,7 @@ async function updateCharacterPosition(data: {
 }
 
 export default {
-  getAllCharacters,
-  createNewCharacter,
-  updateCharacterPosition,
+  create,
+  characters,
+  updateRankOrder,
 };
